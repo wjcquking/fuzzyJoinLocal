@@ -7,6 +7,7 @@ package org.macau.local.output;
  * Date : 2015-01-24
  * Description: This Class is to solve the problem of minimizing the maximum value when we 
  * want to partition n sequence to k Partition
+ * 
  */
 
 
