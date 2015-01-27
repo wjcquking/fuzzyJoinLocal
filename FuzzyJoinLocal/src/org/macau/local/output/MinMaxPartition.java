@@ -22,6 +22,9 @@ import java.io.IOException;
 
 
 public class MinMaxPartition {
+	
+	
+	
 	public static final File file = new File("D:\\360Downloads\\count\\count_7\\part-r-00000");
 	
 	//The Size of the sequence
@@ -40,8 +43,12 @@ public class MinMaxPartition {
 	
 	public static boolean[][][] tagArray = new boolean[arrayCount][arrayCount][k];
 	
+	
+	//Use two dimension array to record the result
 	public static boolean[][] resultTagArray = new boolean[N][k+1];
+	//record the result of P(i,k)
 	public static int[][] resultArray = new int[N][k+1];
+	//record the bound point
 	public static int[][] boundPointArray = new int[N][k+1];
 	
 	public static String[] boundArray = new String[k-1];
