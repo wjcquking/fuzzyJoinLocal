@@ -29,7 +29,7 @@ public class MinMaxPartition {
 	
 	//The Size of the sequence
 	public static final int arrayCount = 779;
-	public static int N = 779;
+	public static int N = 5;
 	
 	public static int[] countArray = new int[arrayCount];
 	
@@ -37,7 +37,7 @@ public class MinMaxPartition {
 	
 	
 	//The Partition Number
-	public static final int k = 30;
+	public static final int k = 3;
 	
 	public static int loop = 0;
 	
@@ -58,7 +58,7 @@ public class MinMaxPartition {
 	
 	/**************************************************************
 	 * 
-	 * The Greed partition
+	 * The Greedy partition
 	 * 
 	 * Every partition should be close to the average as much as possible
 	 * 
@@ -336,9 +336,12 @@ public class MinMaxPartition {
 	
 	/**************************************************************
 	 * 
+	 * The partition K is based on the partition K-1
 	 * 
-	 * 
-	 *************************************************************/
+	 * @param startPoint
+	 * @param endPoint
+	 * @param partitionNumber
+	 */
 	public static void partition(int startPoint, int endPoint,int partitionNumber){
 		
 		
@@ -513,20 +516,18 @@ public class MinMaxPartition {
             	sum += count;
             	
             }
-//            countArray = new int[]{1,2,3,4,5,6,7};
+            countArray = new int[]{1,2,3,4,5};
             int average = sum / k;
             
             //partition number
            
             
             
-            int max = average;
-            int min = average;
 //            newPartition(0,N-1,k,1);
 
 //            System.out.println("The Result " + minMaxPartition(0,N-1,k));
             
-            System.out.println("The Result " + minMaxPartitionNK2(0,k));
+            System.out.println("The Result " + minMaxPartitionNK2WithReplication(0,k));
             
             
            
@@ -618,7 +619,7 @@ public class MinMaxPartition {
 	
 	/***************************************************************
 	 * 
-	 * NK algorithm
+	 * NK algorithm return the final result
 	 * 
 	 * 
 	 * @param startPoint
@@ -778,9 +779,9 @@ public class MinMaxPartition {
 //			System.out.println(startPoint + " "+ partitionNumber + "  "+ partitionID + "    Result2 " + result);
 			
 			if(startPoint == 0 && partitionNumber == k){
-				System.out.println("Point " + 0);
+				System.out.println(1 + "  Point " + 0);
 				int point = boundPointArray[0][k];
-				System.out.println("Point " + point);
+				System.out.println(2 + "  Point " + point);
 				for(int l = k; l > 2;l--){
 					
 //					System.out.println(point + "  " + (l-1));
@@ -797,6 +798,140 @@ public class MinMaxPartition {
 		
 		
 	}
+	
+	/**********************************************************************************
+	 * 
+	 * The NK algorithm with replication in the bound point
+	 * 
+	 * 
+	 * @param startPoint
+	 * @param partitionNumber
+	 * @return
+	 */
+	
+	public static int minMaxPartitionNK2WithReplication(int startPoint, int partitionNumber){
+		
+		System.out.println(startPoint + "   "+ partitionNumber);
+		
+		int replication = 0;
+		
+		int result = -1;
+		
+		if(partitionNumber == 1){
+
+			if(!resultTagArray[startPoint][partitionNumber]){
+				
+				result = 0;
+				
+				for(int j = startPoint == 0 ? startPoint : startPoint-1;j <= N-1;j++){
+					result+= countArray[j];
+				}
+				resultArray[startPoint][partitionNumber]= result;
+				resultTagArray[startPoint][partitionNumber] = true;
+				
+			}else{
+				
+				result = resultArray[startPoint][partitionNumber];
+				
+			}
+//			System.out.println(startPoint + "   " + partitionNumber  + " Result1 " + result);
+			return result;
+		}else{
+		
+			int first = 0;
+			if(startPoint != 0){
+				first += countArray[startPoint-1];
+			}
+			int partitionID = -1;
+			for(int i = startPoint; i < N - partitionNumber+1;i++){
+				
+				if(!resultTagArray[i+1][partitionNumber-1]){
+					int rest = minMaxPartitionNK2WithReplication(i+1,partitionNumber-1);
+					first += countArray[i];			
+					
+					System.out.println("first " + first + " rest " + rest);
+					int temp = max(first,rest);
+					if(result == -1){
+						result = max(first,rest);
+					}
+					
+					if(partitionID == -1){
+						partitionID = startPoint;
+					}
+					
+					if(result > temp){
+						partitionID = i+1;
+					}
+					result = min(result,temp);
+					
+					
+				}else{
+					
+					
+					System.out.println((i+1) + " temp " + (partitionNumber-1));
+					int tempResult = resultArray[i+1][partitionNumber-1];
+					first += countArray[i];	
+					int temp = max(first,tempResult);
+					if(result == -1){
+						result = max(first,tempResult);
+					}
+					
+					//There should be i+1 not startPoint
+					if(partitionID == -1){
+						partitionID = i+1;
+					}
+					
+					if(result > temp){
+						partitionID = i+1;
+					}
+					result = min(result,temp);
+				}
+//				System.out.println(partitionID + "    Pab " + result);
+			}
+//			System.out.println(startPoint + "  " + partitionNumber);
+			resultArray[startPoint][partitionNumber] = result;
+			resultTagArray[startPoint][partitionNumber] = true;
+			boundPointArray[startPoint][partitionNumber] = partitionID;
+			System.out.println(startPoint + " "+ partitionNumber + "  "+ partitionID + "    Result2 " + result);
+			
+			if(startPoint == 0 && partitionNumber == k){
+				printResult();
+			}
+			return result;
+		}
+		
+		
+		
+	}
+
+
+	/*****************************************************************************************
+	 * 
+	 * Print the result in the following format
+	 * 
+	 * Partition ID : Start Point ID : Point Value
+	 * 
+	 * Partition ID: Start From 1
+	 * Start Point ID: Start From 0
+	 * Point Value : the Point Value
+	 * 
+	 * NOTE:The Point is the start Point of every Partition, the start Point of the First 
+	 * Partition is 0
+	 * 
+	 ***************************************************************************************/
+	public static void printResult(){
+		
+		System.out.println(1 + "  Point " + 0 + " value " + countArray[0]);
+		int point = boundPointArray[0][k];
+		
+		System.out.println(2 + "  Point " + point + " value " + countArray[point]);
+		
+		for(int l = k; l > 2;l--){
+			point = boundPointArray[point][l-1];
+			System.out.println( (k-l+3) + "  Point " + point+ " value " + countArray[point]);
+		}
+	}
+
 	public static void main(String[] args){
 		
 		System.out.println("find the minimum maximum value");
