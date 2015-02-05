@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /*********************************************************************
  * 
@@ -49,8 +51,9 @@ public class MinMaxComputationPartition {
 	public static final int countPosition = 1;
 	
 	
+	
 	//The Partition Number
-	public static final int k = 25;
+	public static final int k = 30;
 	
 	public static int loop = 0;
 	
@@ -61,6 +64,7 @@ public class MinMaxComputationPartition {
 	public static boolean[][] resultTagArray = new boolean[N][k+1];
 	//record the result of P(i,k)
 	public static int[][] resultArray = new int[N][k+1];
+	public static List<Point>[][] listResultArray = new ArrayList[N][k+1];
 	//record the bound point
 	public static int[][] boundPointArray = new int[N][k+1];
 	
@@ -179,7 +183,7 @@ public class MinMaxComputationPartition {
             
             
 //            System.out.println("The Result " + minMaxPartitionNK2WithReplication(0,k));
-            
+//            System.out.println("The Result " + getMinMaxValue(minMaxPartitionNK2WithReplicationWithSkyLine(0,k)));
          
             writer.close();
         } catch (IOException e) {
@@ -235,7 +239,8 @@ public class MinMaxComputationPartition {
                 }
             }
         }
-        System.out.println("The Result " + minMaxPartitionNK2(0,k));
+//        System.out.println("The Result " + minMaxPartitionNK2(0,k));
+        System.out.println("The Result " + getMinMaxValue(minMaxPartitionNK2WithReplicationWithSkyLine(0,k)));
         
 	}
 	
@@ -476,6 +481,120 @@ public class MinMaxComputationPartition {
 		
 	}
 
+	
+	/**********************************************************************************
+	 * 
+	 * The NK algorithm with replication in the bound point
+	 * 
+	 * NOTE: The Replication is just occurred in the first Point of every partition
+	 * The first partition is no replication, the rest partition copy the last element
+	 * of previous partition
+	 * 
+	 * For each partition, the sum of all the data can not be larger than some value
+	 * 
+	 * 
+	 * @param startPoint
+	 * @param partitionNumber
+	 * @return the minimum of all the maximum
+	 */
+	
+	public static int minMaxPartitionNK2WithReplicationWithLimitation(int startPoint, int partitionNumber){
+		
+//		System.out.println(startPoint + "   "+ partitionNumber);
+		
+		int replication = 0;
+		
+		int result = -1;
+		
+		if(partitionNumber == 1){
+
+			if(!resultTagArray[startPoint][partitionNumber]){
+				
+				result = 0;
+				
+				for(int j = startPoint == 0 ? startPoint : startPoint-1;j <= N-1;j++){
+					result+= countArray[j];
+				}
+				resultArray[startPoint][partitionNumber]= result;
+				resultTagArray[startPoint][partitionNumber] = true;
+				
+			}else{
+				
+				result = resultArray[startPoint][partitionNumber];
+				
+			}
+//			System.out.println(startPoint + "   " + partitionNumber  + " Result1 " + result);
+			return result;
+			
+			
+		}else{
+		
+			int first = 0;
+			if(startPoint != 0){
+				first += countArray[startPoint-1];
+			}
+			int partitionID = -1;
+			for(int i = startPoint; i < N - partitionNumber+1;i++){
+				
+				if(!resultTagArray[i+1][partitionNumber-1]){
+					int rest = minMaxPartitionNK2WithReplication(i+1,partitionNumber-1);
+					first += countArray[i];			
+					
+//					System.out.println("first " + first + " rest " + rest);
+					int temp = max(first,rest);
+					if(result == -1){
+						result = max(first,rest);
+					}
+					
+					if(partitionID == -1){
+						partitionID = startPoint;
+					}
+					
+					if(result > temp){
+						partitionID = i+1;
+					}
+					result = min(result,temp);
+					
+					
+				}else{
+					
+					
+//					System.out.println((i+1) + " temp " + (partitionNumber-1));
+					int tempResult = resultArray[i+1][partitionNumber-1];
+					first += countArray[i];	
+					int temp = max(first,tempResult);
+					if(result == -1){
+						result = max(first,tempResult);
+					}
+					
+					//There should be i+1 not startPoint
+					if(partitionID == -1){
+						partitionID = i+1;
+					}
+					
+					if(result > temp){
+						partitionID = i+1;
+					}
+					result = min(result,temp);
+				}
+			}
+//			System.out.println(startPoint + "  " + partitionNumber);
+			resultArray[startPoint][partitionNumber] = result;
+			resultTagArray[startPoint][partitionNumber] = true;
+			boundPointArray[startPoint][partitionNumber] = partitionID;
+//			System.out.println(startPoint + " "+ partitionNumber + "  "+ partitionID + "    Result2 " + result);
+			
+			if(startPoint == 0 && partitionNumber == k){
+				printResult();
+			}
+			return result;
+		}
+		
+		
+		
+	}
+	
+
 
 	/*****************************************************************************************
 	 * 
@@ -507,6 +626,187 @@ public class MinMaxComputationPartition {
 		}
 	}
 
+	/**********************************************************************************
+	 * 
+	 * The NK algorithm with replication in the bound point
+	 * 
+	 * NOTE: The Replication is just occurred in the first Point of every partition
+	 * The first partition is no replication, the rest partition copy the last element
+	 * of previous partition
+	 * 
+	 * 
+	 * @param startPoint
+	 * @param partitionNumber
+	 * @return the minimum of all the maximum
+	 */
+	
+	public static List<Point> minMaxPartitionNK2WithReplicationWithSkyLine(int startPoint, int partitionNumber){
+		
+//		System.out.println(startPoint + "   "+ partitionNumber);
+		
+		int replication = 0;
+		
+		int result = -1;
+		
+		if(partitionNumber == 1){
+
+			if(!resultTagArray[startPoint][partitionNumber]){
+				
+				result = 0;
+				
+				if(startPoint == 0){
+					
+				}else{
+					replication += countArray[startPoint-1];
+				}
+				
+				for(int j = startPoint;j <= N-1;j++){
+					result+= countArray[j];
+				}
+				resultArray[startPoint][partitionNumber]= result;
+				listResultArray[startPoint][partitionNumber] = new ArrayList<Point>();
+//				dominatedPointInList(new Point(countArray[startPoint-1],result), listResultArray[startPoint][partitionNumber]);
+				listResultArray[startPoint][partitionNumber].add(new Point(sCountArray[idArray[startPoint-1]] + sCountArray[idArray[startPoint]],result));
+				
+				
+				resultTagArray[startPoint][partitionNumber] = true;
+				
+			}else{
+				
+				result = resultArray[startPoint][partitionNumber];
+				
+			}
+			List<Point> tempList = new ArrayList<Point>();
+//			System.out.println("Point x " + countArray[startPoint-1] + " y " + result);
+			
+			tempList.add(new Point(countArray[startPoint-1],result));
+//			System.out.println(startPoint + "   " + partitionNumber  + " Result1 " + result);
+			return tempList; 
+			
+			
+		}else{
+			List<Point> tempList = new ArrayList<Point>();
+			listResultArray[startPoint][partitionNumber] = new ArrayList<Point>();
+			
+			int first = 0;
+			if(startPoint != 0){
+//				first += countArray[startPoint-1];
+				replication += countArray[startPoint-1];
+			}
+			int partitionID = -1;
+			for(int i = startPoint; i < N - partitionNumber+1;i++){
+				
+				if(!resultTagArray[i+1][partitionNumber-1]){
+					List<Point> pointList = minMaxPartitionNK2WithReplicationWithSkyLine(i+1,partitionNumber-1);
+					
+
+					
+					int rest = getMinMaxValue(pointList);
+					first += countArray[i];			
+					
+//					System.out.println("first " + first + " rest " + rest);
+					int temp = max(first,rest);
+					if(result == -1){
+						result = max(first,rest);
+					}
+					
+					if(partitionID == -1){
+						partitionID = startPoint;
+					}
+					
+					if(result > temp){
+						partitionID = i+1;
+					}
+					result = min(result,temp);
+					
+					for(Point point : pointList){
+						
+//						System.out.println(point.getX()+"  "+startPoint + " " + partitionNumber);
+//						tempList.add(new Point(point.getX() + countArray[startPoint-1],result));
+						
+						if(startPoint == 0){
+//							System.out.println(startPoint + " " + partitionNumber + " Point x1 " + point.getX() + " y " + max(point.getY(),first) + " size " + pointList.size());
+							dominatedPointInList(new Point(point.getX(),max(point.getY(),first)), listResultArray[startPoint][partitionNumber]);
+//							listResultArray[startPoint][partitionNumber].add(new Point(point.getX(),point.getY()));
+						}else{
+//							System.out.println(startPoint + " " + partitionNumber + " Point x2 " + (point.getX() + countArray[startPoint-1]) + " y " + temp);
+							dominatedPointInList(new Point(point.getX() + sCountArray[idArray[startPoint-1]] + sCountArray[idArray[startPoint]],temp), listResultArray[startPoint][partitionNumber]);
+//							listResultArray[startPoint][partitionNumber].add(new Point(point.getX() + countArray[startPoint-1],result));
+						}
+					}
+					
+				}else{
+					
+					List<Point> pointList = listResultArray[i+1][partitionNumber-1];
+//					System.out.println((i+1) + " temp " + (partitionNumber-1));
+//					System.out.println((i+1) + "  " + (partitionNumber-1));
+//					System.out.println(pointList);
+					int tempResult = getMinMaxValue(pointList);
+					first += countArray[i];	
+					
+				
+					int temp = max(first,tempResult);
+					if(result == -1){
+						result = max(first,tempResult);
+					}
+					
+					//There should be i+1 not startPoint
+					if(partitionID == -1){
+						partitionID = i+1;
+					}
+					
+					if(result > temp){
+						partitionID = i+1;
+					}
+					result = min(result,temp);
+					
+					for(Point point : pointList){
+//						System.out.println(point.getX()+"  "+startPoint + " " + partitionNumber);
+//						tempList.add(new Point(point.getX() + countArray[startPoint-1],result));
+						
+						if(startPoint == 0){
+//							System.out.println(startPoint + " " + partitionNumber + " Point x3 " + point.getX() + " y " + max(point.getY(),first));
+							dominatedPointInList(new Point(point.getX(),max(point.getY(),first)), listResultArray[startPoint][partitionNumber]);
+//							listResultArray[startPoint][partitionNumber].add(new Point(point.getX(),point.getY()));
+						}else{
+//							System.out.println(startPoint + " " + partitionNumber + " Point x4 " + (point.getX() + countArray[startPoint-1]) + " y " + temp);
+							dominatedPointInList(new Point(point.getX() + sCountArray[idArray[startPoint-1]] + sCountArray[idArray[startPoint]],temp), listResultArray[startPoint][partitionNumber]);
+//							listResultArray[startPoint][partitionNumber].add(new Point(point.getX() + countArray[startPoint-1],result));
+						}
+					}
+				}
+			}
+//			System.out.println(startPoint + "  " + partitionNumber);
+			resultArray[startPoint][partitionNumber] = result;
+			
+			
+			resultTagArray[startPoint][partitionNumber] = true;
+			boundPointArray[startPoint][partitionNumber] = partitionID;
+//			System.out.println(startPoint + " "+ partitionNumber + "  "+ partitionID + "    Result2 " + result);
+			
+			if(startPoint == 0 && partitionNumber == k){
+				printResult();
+			}
+			return listResultArray[startPoint][partitionNumber];
+		}
+		
+		
+		
+	}
+
+
+	public static int getMinMaxValue(List<Point> list){
+		int min = -1;
+		for(Point point : list){
+			if(min == -1){
+				min = point.getY();
+			}
+			if(min > point.getY()){
+				min = point.getY();
+			}
+		}
+		return min;
+	}
 	/*******************************************************************************
 	 * 
 	 * 
@@ -525,6 +825,62 @@ public class MinMaxComputationPartition {
 		System.out.println(result);
 	}
 	
+	public static boolean dominatedPointInList(Point point, List<Point> list){
+		boolean result = false;
+		
+		boolean exit = false;
+		boolean add = false;
+		boolean addelse = false;
+		
+		boolean dominate = false;
+		boolean dominated = false;
+		boolean noDominate = false;
+		
+		for(int i = 0; i < list.size();i++){
+//			System.out.println(i +" " +list.size());
+			if(point.getX() <= list.get(i).getX() && point.getY() <= list.get(i).getY()){
+				list.remove(i);
+				i--;
+//				System.out.println(i + " 1 " + point.getX());
+				if(add == false){
+					add = true;
+//					list.add(i,point);
+				}else{
+//					i--;
+				}
+			}else if(point.getX() >= list.get(i).getX() && point.getY() >= list.get(i).getY()){
+				exit = true;
+//				System.out.println(i + " 2 " + point.getX());
+				dominated = true;
+				
+			}else{
+				if(addelse == false){
+					addelse = true;
+//					list.add(point);
+				}else{
+					
+				}
+				
+			}
+		}
+		
+		if(dominated == true){
+			
+		}else if(addelse == true){
+			list.add(point);
+		}
+		
+//		System.out.println(list.size());
+		if(list.size() == 0){
+			list.add(point);
+		}
+		
+		if(list == null){
+			list = new ArrayList<Point>();
+			list.add(point);
+		}
+		return result;
+	}
 	
 	public static void main(String[] args){
 		
@@ -532,8 +888,10 @@ public class MinMaxComputationPartition {
 //		GreedyPartition();
 //		LocalOptimalPartition();
 		optimalPartition();
-		printlnPartitionPoint();
-		
+//		printlnPartitionPoint();
+		for(Point p: listResultArray[0][k]){
+			System.out.println(p.getX() + "  " + p.getY());
+		}
 		
 	}
 }
